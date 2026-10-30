@@ -1,0 +1,22 @@
+{
+  "name": "hexbound",
+  "private": true,
+  "packageManager": "npm@11.19.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "turbo": "^2.11.10",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,30 @@
+import type { Rules } from "./types";
+
+export const rules = {
+  board: { cols: 7, rowsPerSide: 4 },
+  benchSize: 9,
+  shopSize: 5,
+  rerollCost: 2,
+  xpBuyCost: 4,
+  xpBuyAmount: 4,
+  xpToNext: [2, 4, 8, 14, 22, 36, 50, 70],
+  maxLevel: 9,
+  poolCopies: { 1: 29, 2: 22, 3: 18, 4: 12, 5: 10 },
+  shopOdds: [
+    [100, 0, 0, 0, 0],
+    [100, 0, 0, 0, 0],
+    [75, 25, 0, 0, 0],
+    [55, 30, 15, 0, 0],
+    [45, 33, 20, 2, 0],
+    [30, 40, 25, 5, 0],
+    [19, 30, 35, 15, 1],
+    [16, 20, 35, 25, 4],
+    [10, 15, 30, 32, 13],
+  ],
+  starMultiplier: [100, 180, 324],
+  economy: { baseIncome: 5, interestPer: 10, interestCap: 5, passiveXp: 2 },
+  streakBonus: [{ streak: 2, gold: 1 }, { streak: 4, gold: 2 }, { streak: 6, gold: 3 }],
+  start: { hp: 100, gold: 6, level: 3 },
+  damage: { base: 2, perRounds: 3, max: 15 },
+  combat: { tickRate: 30, maxTicks: 30 * 45, moveTicks: 9, manaPerAttack: 10, manaPerHitTaken: 4 },
+} as const satisfies Rules;
