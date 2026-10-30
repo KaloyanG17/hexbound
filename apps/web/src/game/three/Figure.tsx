@@ -133,6 +133,19 @@ function renderWeapon(look: UnitLook) {
           ))}
         </group>
       );
+    case "spear":
+      return (
+        <group>
+          <mesh position={[0.42, 0.6, 0]}>
+            <cylinderGeometry args={[0.025, 0.025, 1.3, 6]} />
+            {solid("#8a6a4a")}
+          </mesh>
+          <mesh position={[0.42, 1.3, 0]}>
+            <coneGeometry args={[0.07, 0.22, 6]} />
+            {glow(look.accent)}
+          </mesh>
+        </group>
+      );
   }
 }
 
@@ -183,6 +196,42 @@ function renderExtra(extra: NonNullable<UnitLook["extra"]>, headY: number, look:
         <mesh position={[0, headY + 0.04, 0]}>
           <sphereGeometry args={[0.23, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
           {solid(look.accent)}
+        </mesh>
+      );
+    case "crown":
+      return (
+        <mesh position={[0, headY + 0.22, 0]}>
+          <cylinderGeometry args={[0.2, 0.17, 0.1, 8, 1, true]} />
+          {glow(look.accent)}
+        </mesh>
+      );
+    case "fins":
+      return (
+        <group>
+          {[-1, 1].map((s) => (
+            <mesh key={s} position={[s * 0.3, 0.5, -0.02]} rotation={[0, 0, s * 0.5]}>
+              <boxGeometry args={[0.04, 0.42, 0.22]} />
+              {glow(look.accent)}
+            </mesh>
+          ))}
+        </group>
+      );
+    case "antlers":
+      return (
+        <group>
+          {[-1, 1].map((s) => (
+            <mesh key={s} position={[s * 0.14, headY + 0.3, 0]} rotation={[0, 0, -s * 0.6]}>
+              <cylinderGeometry args={[0.02, 0.03, 0.4, 5]} />
+              {solid(look.accent)}
+            </mesh>
+          ))}
+        </group>
+      );
+    case "tail":
+      return (
+        <mesh position={[0, 0.3, -0.36]} rotation={[0.9, 0, 0]}>
+          <coneGeometry args={[0.07, 0.6, 6]} />
+          {glow(look.accent)}
         </mesh>
       );
   }

@@ -6,8 +6,9 @@ import { Replay } from "./Replay";
 import { LazyArena } from "./three/LazyArena";
 import { benchToWorld, cellToWorld } from "./three/layout";
 import { type ArenaUnit, type DragSource, type DropTarget, sameSource } from "./three/types";
+import { Portrait } from "./Portrait";
 import { type GameTransport, LocalTransport } from "./transport";
-import { UnitToken } from "./UnitToken";
+import { type InspectTarget, UnitInspector } from "./UnitInspector";
 import styles from "./game.module.css";
 
 export function Game() {
@@ -43,6 +44,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
   const [error, setError] = useState<string | null>(null);
   const [replay, setReplay] = useState<FightRecord | null>(null);
   const [busy, setBusy] = useState(false);
+  const [inspect, setInspect] = useState<InspectTarget | null>(null);
 
   useEffect(() => transport.subscribe(setState), [transport]);
 
@@ -142,6 +144,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
           onCellClick={onCellClick}
           onSelect={(src) => setSelection((prev) => (prev && sameSource(prev, src) ? null : src))}
           onDrop={act}
+          onInspect={(unitId, star) => setInspect({ unitId, star })}
         />
 
         <aside className={`${styles.overlay} ${styles.overlayLeft}`}>
@@ -181,15 +184,27 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
           if (!id) return <div key={slot} className={styles.shopEmpty} />;
           const def = getUnit(content, id);
           return (
-            <button key={slot} type="button" className={styles.shopCard} onClick={() => send({ type: "buy", slot })} disabled={me.gold < def.cost}>
-              <UnitToken unitId={id} star={1} content={content} />
+            <button
+              key={slot}
+              type="button"
+              className={styles.shopCard}
+              onClick={() => send({ type: "buy", slot })}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setInspect({ unitId: id, star: 1 });
+              }}
+              disabled={me.gold < def.cost}
+              title="Right-click for details"
+            >
+              <Portrait unit={def} size={96} />
               <span className={styles.shopName}>{def.name}</span>
-              <span className={styles.muted}>{def.traits.map((t) => content.traits.find((x) => x.id === t)?.name).join(" · ")}</span>
-              <span>{def.cost}g</span>
+              <span className={styles.muted}>{def.role} · {def.traits.map((t) => content.traits.find((x) => x.id === t)?.name).join(" · ")}</span>
+              <span className={styles.shopCost}>{def.cost}g</span>
             </button>
           );
         })}
       </div>
+      {inspect ? <UnitInspector target={inspect} content={content} onClose={() => setInspect(null)} /> : null}
     </div>
   );
 }

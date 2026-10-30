@@ -5,6 +5,7 @@ import type { Cell, CombatEvent, FightRecord, Side, Star } from "@hexbound/game-
 import { useEffect, useState } from "react";
 import styles from "./game.module.css";
 import { cellToWorld } from "./three/layout";
+import { type InspectTarget, UnitInspector } from "./UnitInspector";
 import { LazyArena } from "./three/LazyArena";
 import type { ArenaUnit, Floater } from "./three/types";
 
@@ -91,6 +92,7 @@ export function Replay({ fight, mySide, names, content, onDone }: ReplayProps) {
   const [units, setUnits] = useState<ArenaUnit[]>([]);
   const [floaters, setFloaters] = useState<Floater[]>([]);
   const [finished, setFinished] = useState(false);
+  const [inspect, setInspect] = useState<InspectTarget | null>(null);
 
   useEffect(() => {
     const events = fight.result.events;
@@ -154,8 +156,19 @@ export function Replay({ fight, mySide, names, content, onDone }: ReplayProps) {
         <span>{names[mySide]}</span>
       </div>
       <div className={styles.stage}>
-        <LazyArena cols={cols} rows={rows} ownRows={rowsPerSide} benchCount={0} framing="fight" units={units} floaters={floaters} interactive={false} />
+        <LazyArena
+          cols={cols}
+          rows={rows}
+          ownRows={rowsPerSide}
+          benchCount={0}
+          framing="fight"
+          units={units}
+          floaters={floaters}
+          interactive={false}
+          onInspect={(unitId, star) => setInspect({ unitId, star })}
+        />
       </div>
+      {inspect ? <UnitInspector target={inspect} content={content} onClose={() => setInspect(null)} /> : null}
       <div className={styles.replayResult}>
         {finished ? (
           <>

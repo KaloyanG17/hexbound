@@ -184,6 +184,11 @@ function Scene(props: ArenaProps) {
               e.stopPropagation();
               if (!justDragged.current) latest.current.onSelect?.(src);
             } : undefined}
+            onContextMenu={(e) => {
+              e.stopPropagation();
+              e.nativeEvent.preventDefault();
+              latest.current.onInspect?.(u.unitId, u.star);
+            }}
           />
         );
       })}
@@ -206,12 +211,13 @@ interface UnitViewProps {
   hidden?: boolean;
   onPointerDown?: (e: ThreeEvent<PointerEvent>) => void;
   onClick?: (e: ThreeEvent<MouseEvent>) => void;
+  onContextMenu?: (e: ThreeEvent<MouseEvent>) => void;
 }
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
 /** One unit: eases towards its position, lunges when it acts, flashes when hit, shrinks when dead. */
-const Unit3D = memo(function Unit3D({ unit, ghost = false, hidden = false, onPointerDown, onClick }: UnitViewProps) {
+const Unit3D = memo(function Unit3D({ unit, ghost = false, hidden = false, onPointerDown, onClick, onContextMenu }: UnitViewProps) {
   const root = useRef<THREE.Group>(null);
   const pose = useRef<THREE.Group>(null);
   const torso = useRef<THREE.MeshStandardMaterial>(null);
@@ -253,7 +259,7 @@ const Unit3D = memo(function Unit3D({ unit, ghost = false, hidden = false, onPoi
   });
 
   return (
-    <group ref={root} visible={!hidden} onPointerDown={onPointerDown} onClick={onClick}>
+    <group ref={root} visible={!hidden} onPointerDown={onPointerDown} onClick={onClick} onContextMenu={onContextMenu}>
       <group ref={pose}>
         <Figure look={look} enemy={unit.enemy} torsoRef={torso} />
       </group>

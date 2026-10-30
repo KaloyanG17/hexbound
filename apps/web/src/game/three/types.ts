@@ -48,6 +48,8 @@ export interface ArenaProps {
   onCellClick?: (cell: Cell) => void;
   onSelect?: (src: DragSource) => void;
   onDrop?: (src: DragSource, target: DropTarget) => void;
+  /** Right-click on a unit. Both sides of a fight can be inspected. */
+  onInspect?: (unitId: string, star: Star) => void;
 }
 
 export function sameSource(a: DragSource, b: DragSource): boolean {

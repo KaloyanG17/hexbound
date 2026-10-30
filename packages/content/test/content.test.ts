@@ -15,6 +15,8 @@ const unit = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string().min(1),
   cost: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  role: z.enum(["Guardian", "Bruiser", "Skirmisher", "Marksman", "Caster"]),
+  lore: z.string().min(10),
   traits: z.array(z.string()).min(1),
   stats: z.object({
     hp: int.positive(),
@@ -38,6 +40,12 @@ describe("content", () => {
     expect(new Set(ids).size).toBe(ids.length);
     const traitIds = new Set(baseSet.traits.map((t) => t.id));
     for (const u of baseSet.units) for (const t of u.traits) expect(traitIds.has(t), `${u.id} -> ${t}`).toBe(true);
+  });
+
+  it("every cost tier has exactly six characters, so the shop pool is even", () => {
+    for (let cost = 1; cost <= 5; cost++) {
+      expect(baseSet.units.filter((u) => u.cost === cost), `cost ${cost}`).toHaveLength(6);
+    }
   });
 
   it("shop odds rows sum to 100 and cover every level", () => {

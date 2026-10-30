@@ -306,3 +306,182 @@
   font-size: 9px;
   color: var(--accent);
 }
+
+/* Shop cards carry the character portrait. */
+.shopCard {
+  min-height: 0;
+  padding: 8px 6px 10px;
+  cursor: pointer;
+}
+
+.shopCost {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.portrait {
+  border-radius: 12px;
+  display: block;
+}
+
+/* Inspector: opened by right-clicking a unit or a shop card. */
+.inspectorBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(0 0 0 / 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.inspector {
+  position: relative;
+  width: min(640px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.5);
+}
+
+.inspectorClose {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.inspectorTop {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.inspectorTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.inspectorTitle h2 {
+  font-size: 1.5rem;
+}
+
+.lore {
+  font-style: italic;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.starPicker {
+  display: flex;
+  gap: 6px;
+}
+
+.starOn,
+.starOff {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: var(--accent);
+}
+
+.starOn {
+  background: var(--accent);
+  color: #111;
+}
+
+.starOff {
+  background: var(--bg);
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.statItem {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.statItem dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.statItem dd {
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.abilityBox {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.abilityBox p {
+  font-size: 0.95rem;
+}
+
+.abilityLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.traitList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.traitRow {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 560px) {
+  .inspectorTop {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .inspectorTitle {
+    align-items: center;
+  }
+
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+}

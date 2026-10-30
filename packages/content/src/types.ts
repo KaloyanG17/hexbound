@@ -21,10 +21,15 @@ export interface UnitStats {
   startMana: number;
 }
 
+export type UnitRole = "Guardian" | "Bruiser" | "Skirmisher" | "Marksman" | "Caster";
+
 export interface UnitDef {
   id: string;
   name: string;
   cost: Cost;
+  role: UnitRole;
+  /** One line of flavour text for the inspector. */
+  lore: string;
   traits: readonly string[];
   stats: UnitStats;
   ability: { name: string; effect: Effect };
