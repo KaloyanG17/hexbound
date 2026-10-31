@@ -58,7 +58,7 @@ function resolveDrop([x, z]: Vec2, o: ArenaProps): DropTarget | null {
 
 function Scene(props: ArenaProps) {
   const { cols, rows, ownRows, benchCount, framing, units, floaters, interactive, dropHint = false } = props;
-  const { camera, gl } = useThree();
+  const { camera, gl, size } = useThree();
   const [hover, setHover] = useState<string | null>(null);
   const [ghost, setGhost] = useState<{ src: DragSource; point: Vec2 } | null>(null);
   const press = useRef<Press | null>(null);
@@ -69,11 +69,14 @@ function Scene(props: ArenaProps) {
     latest.current = props;
   });
 
+  // Pull the camera back on narrow panes so the whole bench stays in view.
+  const aspect = size.width / Math.max(1, size.height);
+  const pullBack = aspect < 1.25 ? 1.25 / Math.max(aspect, 0.4) : 1;
   useEffect(() => {
-    if (framing === "plan") camera.position.set(0, 7.6, 7.4);
-    else camera.position.set(0, 9.2, 8.4);
+    if (framing === "plan") camera.position.set(0, 7.6 * pullBack, 7.4 * pullBack);
+    else camera.position.set(0, 9.2 * pullBack, 8.4 * pullBack);
     camera.lookAt(0, 0, framing === "plan" ? 0.5 : -0.3);
-  }, [camera, framing]);
+  }, [camera, framing, pullBack]);
 
   // Drag handling lives on the window so a drag can end anywhere, including off the board.
   useEffect(() => {
@@ -124,7 +127,8 @@ function Scene(props: ArenaProps) {
       const [x, z] = cellToWorld({ col, row }, cols, rows);
       const own = row < ownRows;
       const lit = (own && interactive && hover === key) || (own && dropHint && interactive);
-      const color = own ? (lit ? "#4a6fa8" : "#2e4468") : "#4a2f3a";
+      // Warm, mossy floor like the TFT arena; the lit state shows where a drop will land.
+      const color = own ? (lit ? "#7d9a5c" : "#5e7448") : "#7a4f3c";
       const clickable = interactive && own;
       tiles.push(
         <mesh
@@ -150,7 +154,7 @@ function Scene(props: ArenaProps) {
   return (
     <>
       <ambientLight intensity={0.9} />
-      <hemisphereLight args={["#cfe3ff", "#1a1224", 0.9]} />
+      <hemisphereLight args={["#ffe9c4", "#2a1d12", 0.9]} />
       <directionalLight position={[3, 12, 7]} intensity={1.4} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[80, 80]} />
@@ -164,7 +168,7 @@ function Scene(props: ArenaProps) {
         return (
           <mesh key={`pad-${i}`} position={[x, TILE_TOP / 2 - 0.02, z]}>
             <boxGeometry args={[BENCH_GAP * 0.86, TILE_TOP - 0.04, BENCH_GAP * 0.86]} />
-            <meshStandardMaterial color="#1b2637" roughness={0.8} />
+            <meshStandardMaterial color="#5a4128" roughness={0.85} />
           </mesh>
         );
       })}
