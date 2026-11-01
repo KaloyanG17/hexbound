@@ -1,14 +1,15 @@
 "use client";
 
-import { Billboard, Html } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import type { Cell } from "@hexbound/game-core";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import styles from "../game.module.css";
 import { Figure } from "./Figure";
 import { BENCH_GAP, benchToWorld, cellToWorld, HEX_R, ROW_STEP, TILE_TOP, type Vec2 } from "./layout";
 import { lookFor } from "./looks";
+import { makeMapTexture, MAP_H, MAP_W } from "./mapTexture";
 import { type ArenaProps, type ArenaUnit, type DragSource, type DropTarget, sameSource } from "./types";
 
 const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), -TILE_TOP);
@@ -74,7 +75,7 @@ function Scene(props: ArenaProps) {
   const pullBack = aspect < 1.25 ? 1.25 / Math.max(aspect, 0.4) : 1;
   useEffect(() => {
     if (framing === "plan") camera.position.set(0, 7.6 * pullBack, 7.4 * pullBack);
-    else camera.position.set(0, 9.2 * pullBack, 8.4 * pullBack);
+    else camera.position.set(0, 7.9 * pullBack, 7.3 * pullBack);
     camera.lookAt(0, 0, framing === "plan" ? 0.5 : -0.3);
   }, [camera, framing, pullBack]);
 
@@ -119,6 +120,7 @@ function Scene(props: ArenaProps) {
 
   const dragSrc = ghost?.src;
   const ghostUnit = ghost ? units.find((u) => u.source && sameSource(u.source, ghost.src)) : undefined;
+  const mapTexture = useMemo(() => makeMapTexture(), []);
 
   const tiles = [];
   for (let row = 0; row < rows; row++) {
@@ -127,26 +129,31 @@ function Scene(props: ArenaProps) {
       const [x, z] = cellToWorld({ col, row }, cols, rows);
       const own = row < ownRows;
       const lit = (own && interactive && hover === key) || (own && dropHint && interactive);
-      // Warm, mossy floor like the TFT arena; the lit state shows where a drop will land.
-      const color = own ? (lit ? "#7d9a5c" : "#5e7448") : "#7a4f3c";
+      // Own hexes are pale stone-moss, enemy hexes are dusty clay. The lit state shows where a drop lands.
+      const color = own ? (lit ? "#a9bf86" : "#86a06a") : "#8a6a4e";
       const clickable = interactive && own;
       tiles.push(
-        <mesh
-          key={key}
-          position={[x, TILE_TOP / 2, z]}
-          onPointerOver={clickable ? (e) => {
-            e.stopPropagation();
-            setHover(key);
-          } : undefined}
-          onPointerOut={clickable ? () => setHover(null) : undefined}
-          onClick={clickable ? (e) => {
-            e.stopPropagation();
-            if (!justDragged.current) latest.current.onCellClick?.({ col, row });
-          } : undefined}
-        >
-          <cylinderGeometry args={[HEX_R * 0.96, HEX_R * 0.96, TILE_TOP, 6]} />
-          <meshStandardMaterial color={color} roughness={0.75} />
-        </mesh>,
+        <group key={key}>
+          <mesh position={[x, TILE_TOP / 4, z]}>
+            <cylinderGeometry args={[HEX_R * 1.0, HEX_R * 1.04, TILE_TOP / 2, 6]} />
+            <meshStandardMaterial color="#2b2118" roughness={1} />
+          </mesh>
+          <mesh
+            position={[x, TILE_TOP / 2 + 0.01, z]}
+            onPointerOver={clickable ? (e) => {
+              e.stopPropagation();
+              setHover(key);
+            } : undefined}
+            onPointerOut={clickable ? () => setHover(null) : undefined}
+            onClick={clickable ? (e) => {
+              e.stopPropagation();
+              if (!justDragged.current) latest.current.onCellClick?.({ col, row });
+            } : undefined}
+          >
+            <cylinderGeometry args={[HEX_R * 0.9, HEX_R * 0.92, TILE_TOP * 0.6, 6]} />
+            <meshStandardMaterial color={color} roughness={0.85} />
+          </mesh>
+        </group>,
       );
     }
   }
@@ -156,9 +163,13 @@ function Scene(props: ArenaProps) {
       <ambientLight intensity={0.9} />
       <hemisphereLight args={["#ffe9c4", "#2a1d12", 0.9]} />
       <directionalLight position={[3, 12, 7]} intensity={1.4} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
         <planeGeometry args={[80, 80]} />
-        <meshStandardMaterial color="#0a0f16" />
+        <meshStandardMaterial color="#070b12" />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+        <planeGeometry args={[MAP_W, MAP_H]} />
+        <meshStandardMaterial map={mapTexture} roughness={0.95} />
       </mesh>
 
       {tiles}
@@ -257,7 +268,7 @@ const Unit3D = memo(function Unit3D({ unit, ghost = false, hidden = false, onPoi
     fx.current.hit *= Math.exp(-dt * 7);
     fx.current.alive += ((unit.dead ? 0 : 1) - fx.current.alive) * (1 - Math.exp(-dt * 10));
 
-    g.scale.setScalar(Math.max(0.001, fx.current.alive) * 0.8);
+    g.scale.setScalar(Math.max(0.001, fx.current.alive) * 1.1);
     if (pose.current) pose.current.scale.setScalar(1 + 0.22 * fx.current.pulse);
     if (torso.current) torso.current.emissiveIntensity = fx.current.hit * 1.4;
   });
@@ -268,14 +279,23 @@ const Unit3D = memo(function Unit3D({ unit, ghost = false, hidden = false, onPoi
         <Figure look={look} enemy={unit.enemy} torsoRef={torso} />
       </group>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <ringGeometry args={[0.36, 0.44, 28]} />
-        <meshBasicMaterial color={unit.enemy ? "#e5484d" : "#3b9eff"} transparent opacity={0.85} />
+      {/* Soft contact shadow, a dark pedestal, and a thin team-coloured rim so units read as standing on the hex. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, 0]}>
+        <circleGeometry args={[0.42, 28]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.4} depthWrite={false} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
+        <circleGeometry args={[0.36, 28]} />
+        <meshStandardMaterial color="#1a1510" roughness={0.6} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <ringGeometry args={[0.34, 0.39, 32]} />
+        <meshBasicMaterial color={unit.enemy ? "#e5484d" : "#4ea8ff"} transparent opacity={0.95} />
       </mesh>
       {unit.selected ? (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-          <ringGeometry args={[0.5, 0.56, 32]} />
-          <meshBasicMaterial color="#f2c14e" />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.024, 0]}>
+          <ringGeometry args={[0.46, 0.52, 40]} />
+          <meshBasicMaterial color="#f7de8e" />
         </mesh>
       ) : null}
 
@@ -287,28 +307,19 @@ const Unit3D = memo(function Unit3D({ unit, ghost = false, hidden = false, onPoi
       ))}
 
       {unit.maxHp > 0 ? (
-        <Billboard position={[0, 1.5, 0]}>
-          <mesh>
-            <planeGeometry args={[0.9, 0.1]} />
-            <meshBasicMaterial color="#000000" transparent opacity={0.6} depthTest={false} />
-          </mesh>
-          <mesh position={[-0.45 * (1 - hpRatio), 0, 0.01]} scale={[hpRatio, 1, 1]}>
-            <planeGeometry args={[0.9, 0.07]} />
-            <meshBasicMaterial color="#4ade80" depthTest={false} />
-          </mesh>
-          {unit.maxMana > 0 ? (
-            <>
-              <mesh position={[0, -0.13, 0]}>
-                <planeGeometry args={[0.9, 0.06]} />
-                <meshBasicMaterial color="#000000" transparent opacity={0.6} depthTest={false} />
-              </mesh>
-              <mesh position={[-0.45 * (1 - manaRatio), -0.13, 0.01]} scale={[manaRatio, 1, 1]}>
-                <planeGeometry args={[0.9, 0.05]} />
-                <meshBasicMaterial color="#60a5fa" depthTest={false} />
-              </mesh>
-            </>
-          ) : null}
-        </Billboard>
+        // HTML bars stay crisp at any zoom and sit above the figure, like the TFT health bars.
+        <Html position={[0, 1.62, 0]} center zIndexRange={[20, 0]}>
+          <div className={styles.unitBars}>
+            <div className={styles.hpTrack}>
+              <div className={unit.enemy ? styles.hpFillEnemy : styles.hpFill} style={{ width: `${hpRatio * 100}%` }} />
+            </div>
+            {unit.maxMana > 0 ? (
+              <div className={styles.manaTrack}>
+                <div className={styles.manaFill} style={{ width: `${manaRatio * 100}%` }} />
+              </div>
+            ) : null}
+          </div>
+        </Html>
       ) : null}
     </group>
   );

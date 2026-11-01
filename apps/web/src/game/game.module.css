@@ -830,8 +830,51 @@ button:disabled {
   display: block;
 }
 
+/* Unit health and mana bars drawn above each figure in the arena. Non-interactive, so clicks reach the unit. */
+.unitBars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 64px;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.7));
+}
+
+.hpTrack,
+.manaTrack {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(8 12 20 / 0.85);
+  border: 1px solid rgb(0 0 0 / 0.6);
+  overflow: hidden;
+}
+
+.manaTrack {
+  height: 4px;
+}
+
+.hpFill,
+.hpFillEnemy,
+.manaFill {
+  height: 100%;
+  transition: width 220ms ease-out;
+}
+
+.hpFill {
+  background: linear-gradient(#8ff0a8, #2ea55a);
+}
+
+.hpFillEnemy {
+  background: linear-gradient(#ff9a9a, #d13b3b);
+}
+
+.manaFill {
+  background: linear-gradient(#9cc8ff, #3a7bd5);
+}
+
 /* Narrow screens: stack the panels under the arena instead of hiding them. */
-@media (max-width: 1000px) {
+@media (max-width: 760px) {
   .table {
     height: auto;
     min-height: 0;
