@@ -3,9 +3,9 @@
 import type { UnitDef } from "@hexbound/content";
 import { activeTraits, type Cell, type Command, type FightRecord, getUnit, isAlive, type MatchState, sameCell, type Side } from "@hexbound/game-core";
 import { useEffect, useState } from "react";
-import { Portrait } from "./Portrait";
 import { Replay } from "./Replay";
 import { LazyArena } from "./three/LazyArena";
+import { ModelPortrait } from "./three/ModelPortrait";
 import { benchToWorld, cellToWorld } from "./three/layout";
 import { COST_COLORS } from "./three/looks";
 import { type ArenaUnit, type DragSource, type DropTarget, sameSource } from "./three/types";
@@ -220,7 +220,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
 
         {selectedUnit && selectedDef ? (
           <div className={styles.selectCard}>
-            <Portrait unit={selectedDef} size={64} />
+            <ModelPortrait unit={selectedDef} size={64} />
             <div className={styles.selectText}>
               <strong>{selectedDef.name}</strong>
               <span className={styles.muted}>{"★".repeat(selectedUnit.star)} · {selectedDef.role} · sells for {selectedDef.cost * (selectedUnit.star === 1 ? 1 : selectedUnit.star === 2 ? 3 : 9)}g</span>
@@ -273,7 +273,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
                 title={`${def.name} — ${def.cost} gold. Click to buy, right-click for details.`}
               >
                 <span className={styles.costChip} style={{ background: COST_COLORS[def.cost] }}>{def.cost}</span>
-                <Portrait unit={def} size={104} />
+                <ModelPortrait unit={def} size={104} />
                 <span className={styles.shopName}>{def.name}</span>
                 <span className={styles.shopTraits}>{def.traits.map((t) => content.traits.find((x) => x.id === t)?.name).join(" · ")}</span>
               </button>

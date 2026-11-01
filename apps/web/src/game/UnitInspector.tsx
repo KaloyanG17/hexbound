@@ -3,7 +3,7 @@
 import type { ContentSet } from "@hexbound/content";
 import { getUnit, type Star } from "@hexbound/game-core";
 import { useEffect, useState } from "react";
-import { Portrait } from "./Portrait";
+import { ModelPortrait } from "./three/ModelPortrait";
 import { describeBreakpoints, derivedStats, rangeLabel } from "./inspect";
 import styles from "./game.module.css";
 
@@ -43,7 +43,7 @@ export function UnitInspector({ target, content, onClose }: Props) {
         <button type="button" className={styles.inspectorClose} onClick={onClose} aria-label="Close">×</button>
 
         <div className={styles.inspectorTop}>
-          <Portrait unit={def} size={148} />
+          <ModelPortrait unit={def} size={148} />
           <div className={styles.inspectorTitle}>
             <h2>{def.name}</h2>
             <p className={styles.muted}>{def.role} · {def.cost}-gold character</p>
