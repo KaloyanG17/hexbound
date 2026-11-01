@@ -2,6 +2,8 @@
 // rather than in content. Every unit in packages/content needs an entry here.
 
 export type Body = "brute" | "slim" | "caster" | "beast";
+/** The KayKit characters available in the free pack. */
+export type KayModel = "Barbarian" | "Knight" | "Mage" | "Ranger" | "Rogue" | "Rogue_Hooded";
 export type Weapon = "sword" | "bow" | "staff" | "shield" | "club" | "orb" | "claws" | "spear";
 export type Extra = "wings" | "cape" | "horns" | "hood" | "ears" | "crown" | "fins" | "antlers" | "tail";
 
@@ -60,6 +62,20 @@ const FALLBACK: UnitLook = { body: "slim", color: "#888", accent: "#ddd", weapon
 
 export function lookFor(unitId: string): UnitLook {
   return LOOKS[unitId] ?? FALLBACK;
+}
+
+/** Which KayKit model stands in for a look: bruisers, guardians, archers, casters and skirmishers. */
+export function kayModelFor(look: UnitLook): KayModel {
+  switch (look.body) {
+    case "brute":
+      return look.weapon === "shield" ? "Knight" : "Barbarian";
+    case "slim":
+      return look.weapon === "bow" || look.weapon === "spear" ? "Ranger" : "Rogue";
+    case "caster":
+      return "Mage";
+    case "beast":
+      return "Rogue_Hooded";
+  }
 }
 
 export const COST_COLORS = ["", "#9aa3ad", "#3fbf7f", "#3b9be0", "#b06cf0", "#f0b429"] as const;

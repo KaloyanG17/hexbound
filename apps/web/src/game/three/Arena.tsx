@@ -3,12 +3,13 @@
 import { Html } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import type { Cell } from "@hexbound/game-core";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { KayCharacter, type KayMotion } from "./CharacterModel";
 import * as THREE from "three";
 import styles from "../game.module.css";
 import { Figure } from "./Figure";
 import { BENCH_GAP, benchToWorld, cellToWorld, HEX_R, ROW_STEP, TILE_TOP, type Vec2 } from "./layout";
-import { lookFor } from "./looks";
+import { kayModelFor, lookFor } from "./looks";
 import { makeMapTexture, MAP_H, MAP_W } from "./mapTexture";
 import { type ArenaProps, type ArenaUnit, type DragSource, type DropTarget, sameSource } from "./types";
 
@@ -247,6 +248,7 @@ const Unit3D = memo(function Unit3D({ unit, ghost = false, hidden = false, onPoi
   const seen = useRef({ pulse: unit.pulse, hit: unit.hit });
   const fx = useRef({ pulse: 0, hit: 0, alive: unit.dead ? 0 : 1 });
   const look = lookFor(unit.unitId);
+  const motion = useRef<KayMotion>({ moving: false, dead: unit.dead, hit: unit.hit, act: unit.pulse });
   const hpRatio = unit.maxHp > 0 ? Math.max(0.001, clamp01(unit.hp / unit.maxHp)) : 1;
   const manaRatio = unit.maxMana > 0 ? Math.max(0.001, clamp01(unit.mana / unit.maxMana)) : 0;
 
@@ -257,6 +259,11 @@ const Unit3D = memo(function Unit3D({ unit, ghost = false, hidden = false, onPoi
       g.position.set(unit.pos[0], TILE_TOP, unit.pos[1]);
       placed.current = true;
     }
+    // Report movement and state to the character model before easing the position.
+    motion.current.moving = Math.hypot(unit.pos[0] - g.position.x, unit.pos[1] - g.position.z) > 0.05;
+    motion.current.dead = unit.dead;
+    motion.current.hit = unit.hit;
+    motion.current.act = unit.pulse;
     const follow = 1 - Math.exp(-dt * (ghost ? 60 : 12));
     g.position.x += (unit.pos[0] - g.position.x) * follow;
     g.position.z += (unit.pos[1] - g.position.z) * follow;
@@ -283,7 +290,9 @@ const Unit3D = memo(function Unit3D({ unit, ghost = false, hidden = false, onPoi
   return (
     <group ref={root} visible={!hidden} onPointerDown={onPointerDown} onClick={onClick} onContextMenu={onContextMenu}>
       <group ref={pose}>
-        <Figure look={look} enemy={unit.enemy} torsoRef={torso} />
+        <Suspense fallback={<Figure look={look} enemy={unit.enemy} torsoRef={torso} />}>
+          <KayCharacter model={kayModelFor(look)} enemy={unit.enemy} motion={motion} />
+        </Suspense>
       </group>
 
       {/* Soft contact shadow, a dark pedestal, and a thin team-coloured rim so units read as standing on the hex. */}
