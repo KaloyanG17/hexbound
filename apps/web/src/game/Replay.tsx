@@ -8,6 +8,7 @@ import { cellToWorld } from "./three/layout";
 import { type InspectTarget, UnitInspector } from "./UnitInspector";
 import { LazyArena } from "./three/LazyArena";
 import type { ArenaUnit, Floater } from "./three/types";
+import { type SpellFamily, playSpell } from "./sound";
 
 const SPEED = 1.5;
 const FLOATER_MS = 900;
@@ -31,10 +32,14 @@ interface Fx {
   cell: Cell;
   text: string;
   tone: Floater["tone"];
+  spell?: SpellFamily;
 }
 
-/** Applies one combat event. Text popups are collected into fx for the caller to show. */
-function applyEvent(units: Map<number, Live>, e: CombatEvent, fx: Fx[]) {
+// Damage abilities sound like earth impacts, heals like plant magic, stuns like wind.
+const SPELL_FOR_EFFECT: Record<"damage" | "heal" | "stun", SpellFamily> = { damage: "earth", heal: "plant", stun: "wind" };
+
+/** Applies one combat event. Text popups and sounds are collected into fx for the caller to show. */
+function applyEvent(units: Map<number, Live>, e: CombatEvent, fx: Fx[], content: ContentSet) {
   if (e.type === "spawn") {
     units.set(e.uid, {
       uid: e.uid, side: e.side, unitId: e.unitId, star: e.star, cell: e.cell,
@@ -52,10 +57,12 @@ function applyEvent(units: Map<number, Live>, e: CombatEvent, fx: Fx[]) {
     case "attack":
       u.pulse++;
       break;
-    case "cast":
+    case "cast": {
       u.pulse++;
-      fx.push({ cell: u.cell, text: e.ability, tone: "cast" });
+      const kind = content.units.find((x) => x.id === u.unitId)!.ability.effect.kind;
+      fx.push({ cell: u.cell, text: e.ability, tone: "cast", spell: SPELL_FOR_EFFECT[kind] });
       break;
+    }
     case "damage":
       u.hp = e.hp;
       u.hit++;
@@ -125,11 +132,12 @@ export function Replay({ fight, mySide, names, content, onDone }: ReplayProps) {
       const fx: Fx[] = [];
       let changed = false;
       while (cursor < events.length && events[cursor]!.t <= tick) {
-        applyEvent(state, events[cursor]!, fx);
+        applyEvent(state, events[cursor]!, fx, content);
         cursor++;
         changed = true;
       }
       if (changed) setUnits(toArena());
+      for (const f of fx) if (f.spell) playSpell(f.spell);
       if (fx.length > 0) {
         const made: Floater[] = fx.map((f) => ({ id: ++nextId, pos: cellToWorld(display(f.cell), cols, rows), text: f.text, tone: f.tone }));
         setFloaters((prev) => [...prev, ...made]);
