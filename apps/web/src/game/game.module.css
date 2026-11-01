@@ -163,17 +163,22 @@ button:disabled {
 
 .topStats {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
 .chip {
   display: flex;
   flex-direction: column;
-  padding: 3px 12px;
+  justify-content: center;
+  align-items: flex-start;
+  height: 42px;
+  padding: 0 14px;
   border-radius: 8px;
   background: var(--bg-deep);
   border: 1px solid var(--line);
-  min-width: 78px;
+  min-width: 92px;
+  font-variant-numeric: tabular-nums;
 }
 
 .chipLabel {

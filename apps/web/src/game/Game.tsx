@@ -41,6 +41,8 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
   const { content, playerId } = transport;
   const { rules } = content;
   const { cols, rowsPerSide } = rules.board;
+  // The whole map is drawn in planning: your half is interactive, the opponent's half stays visible.
+  const mapRows = rowsPerSide * 2;
   const [state, setState] = useState<MatchState>(() => transport.getState());
   const [selection, setSelection] = useState<DragSource | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +120,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
     ...me.board.map((u, i): ArenaUnit => {
       const source: DragSource = { from: "board", index: i };
       return {
-        key: `board-${i}`, unitId: u.unitId, star: u.star, pos: cellToWorld(u.cell, cols, rowsPerSide), enemy: false,
+        key: `board-${i}`, unitId: u.unitId, star: u.star, pos: cellToWorld(u.cell, cols, mapRows), enemy: false,
         hp: 0, maxHp: 0, mana: 0, maxMana: 0, dead: false, pulse: 0, hit: 0, source,
         selected: selection !== null && sameSource(selection, source),
       };
@@ -127,7 +129,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
       if (!u) return [];
       const source: DragSource = { from: "bench", index: i };
       return [{
-        key: `bench-${i}`, unitId: u.unitId, star: u.star, pos: benchToWorld(i, rules.benchSize, rowsPerSide), enemy: false,
+        key: `bench-${i}`, unitId: u.unitId, star: u.star, pos: benchToWorld(i, rules.benchSize, mapRows), enemy: false,
         hp: 0, maxHp: 0, mana: 0, maxMana: 0, dead: false, pulse: 0, hit: 0, source,
         selected: selection !== null && sameSource(selection, source),
       }];
@@ -202,7 +204,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
       <section className={styles.arenaPane}>
         <LazyArena
           cols={cols}
-          rows={rowsPerSide}
+          rows={mapRows}
           ownRows={rowsPerSide}
           benchCount={rules.benchSize}
           framing="plan"

@@ -74,9 +74,9 @@ function Scene(props: ArenaProps) {
   const aspect = size.width / Math.max(1, size.height);
   const pullBack = aspect < 1.25 ? 1.25 / Math.max(aspect, 0.4) : 1;
   useEffect(() => {
-    if (framing === "plan") camera.position.set(0, 7.6 * pullBack, 7.4 * pullBack);
-    else camera.position.set(0, 7.9 * pullBack, 7.3 * pullBack);
-    camera.lookAt(0, 0, framing === "plan" ? 0.5 : -0.3);
+    // Both planning and fights frame the whole map, so the board never shifts between views.
+    camera.position.set(0, 9.4 * pullBack, 8.6 * pullBack);
+    camera.lookAt(0, 0, framing === "plan" ? 0.9 : 0);
   }, [camera, framing, pullBack]);
 
   // Drag handling lives on the window so a drag can end anywhere, including off the board.
@@ -153,6 +153,13 @@ function Scene(props: ArenaProps) {
             <cylinderGeometry args={[HEX_R * 0.9, HEX_R * 0.92, TILE_TOP * 0.6, 6]} />
             <meshStandardMaterial color={color} roughness={0.85} />
           </mesh>
+          {hover === key && clickable ? (
+            // A gold hex outline marks where the selected or dragged unit will land.
+            <mesh position={[x, TILE_TOP + 0.02, z]} rotation={[-Math.PI / 2, 0, Math.PI / 6]}>
+              <ringGeometry args={[HEX_R * 0.72, HEX_R * 0.88, 6]} />
+              <meshBasicMaterial color="#f7de8e" />
+            </mesh>
+          ) : null}
         </group>,
       );
     }
