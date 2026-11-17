@@ -27,4 +27,7 @@ export const rules = {
   start: { hp: 100, gold: 6, level: 3 },
   damage: { base: 2, perRounds: 3, max: 15 },
   combat: { tickRate: 30, maxTicks: 30 * 45, moveTicks: 9, manaPerAttack: 10, manaPerHitTaken: 4 },
+  creepRounds: [3, 6, 9, 12],
+  maxItemsPerUnit: 3,
+  maxInventory: 10,
 } as const satisfies Rules;

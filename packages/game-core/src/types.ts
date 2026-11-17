@@ -6,6 +6,8 @@ export type Star = 1 | 2 | 3;
 export interface OwnedUnit {
   unitId: string;
   star: Star;
+  /** Item ids the unit carries. Missing means none. */
+  items?: string[];
 }
 
 /**

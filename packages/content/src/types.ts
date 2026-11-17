@@ -70,10 +70,36 @@ export interface Rules {
   /** Loser takes min(base + floor(round / perRounds), max) + surviving enemy units. */
   damage: { base: number; perRounds: number; max: number };
   combat: { tickRate: number; maxTicks: number; moveTicks: number; manaPerAttack: number; manaPerHitTaken: number };
+  /** Rounds that are monster rounds: no opponent, the player fights creeps and wins loot. */
+  creepRounds: readonly number[];
+  /** Items a character can carry. */
+  maxItemsPerUnit: number;
+  /** Items held in the player's inventory. */
+  maxInventory: number;
 }
+
+/** A combat item. Components combine in pairs into finished items. */
+export interface ItemDef {
+  id: string;
+  name: string;
+  kind: "component" | "item";
+  /** Stat changes applied to the character carrying the item. Negative values are allowed. */
+  stats: Partial<Pick<UnitStats, "hp" | "attack" | "armor" | "attackTicks" | "maxMana" | "startMana">>;
+  /** Only finished items have a recipe: the two component ids that combine into them. */
+  recipe?: readonly [string, string];
+  description: string;
+}
+
+/** A creep. Monsters fight like characters but are never sold in the shop. */
+export type MonsterDef = UnitDef & {
+  /** How many loot components a win against this monster drops. */
+  drops: number;
+};
 
 export interface ContentSet {
   units: readonly UnitDef[];
+  monsters: readonly MonsterDef[];
+  items: readonly ItemDef[];
   traits: readonly TraitDef[];
   rules: Rules;
 }

@@ -1,10 +1,41 @@
-import type { ContentSet, StatKey, UnitDef } from "@hexbound/content";
+import type { ContentSet, ItemDef, StatKey, UnitDef } from "@hexbound/content";
 import type { Star } from "./types";
 
+/** Characters and monsters share one lookup, so combat treats them the same way. */
 export function getUnit(content: ContentSet, unitId: string): UnitDef {
-  const def = content.units.find((u) => u.id === unitId);
+  const def = content.units.find((u) => u.id === unitId) ?? content.monsters.find((m) => m.id === unitId);
   if (!def) throw new Error(`Unknown unit: ${unitId}`);
   return def;
+}
+
+export function getItem(content: ContentSet, itemId: string): ItemDef {
+  const def = content.items.find((i) => i.id === itemId);
+  if (!def) throw new Error(`Unknown item: ${itemId}`);
+  return def;
+}
+
+/** The finished item two components make, in either order, or null when they don't combine. */
+export function recipeFor(content: ContentSet, a: string, b: string): ItemDef | null {
+  return content.items.find((i) => i.recipe && ((i.recipe[0] === a && i.recipe[1] === b) || (i.recipe[0] === b && i.recipe[1] === a))) ?? null;
+}
+
+export interface ItemTotals {
+  hp: number;
+  attack: number;
+  armor: number;
+  attackTicks: number;
+  maxMana: number;
+  startMana: number;
+}
+
+/** The summed stat changes of a list of item ids. */
+export function itemTotals(content: ContentSet, itemIds: readonly string[]): ItemTotals {
+  const total: ItemTotals = { hp: 0, attack: 0, armor: 0, attackTicks: 0, maxMana: 0, startMana: 0 };
+  for (const id of itemIds) {
+    const stats = getItem(content, id).stats;
+    for (const key of Object.keys(total) as (keyof ItemTotals)[]) total[key] += stats[key] ?? 0;
+  }
+  return total;
 }
 
 export function scaleByStar(value: number, star: Star, content: ContentSet): number {

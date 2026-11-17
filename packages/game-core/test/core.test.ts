@@ -94,6 +94,19 @@ describe("combat", () => {
     expect(simulateCombat([weak, strong], 5, content).winner).toBe(1);
   });
 
+  it("items change a fighter's health and mana cap", () => {
+    const plain: BoardUnit[] = [{ unitId: "coralyn", star: 1, cell: { col: 3, row: 3 } }];
+    const geared: BoardUnit[] = [{ unitId: "coralyn", star: 1, cell: { col: 3, row: 3 }, items: ["tidal-bulwark", "sunspire-crown"] }];
+    const foe: BoardUnit[] = [{ unitId: "moss-crawler", star: 1, cell: { col: 3, row: 3 } }];
+    const spawnOf = (board: BoardUnit[]) => {
+      const e = simulateCombat([board, foe], 1, content).events.find((x) => x.type === "spawn" && x.side === 0);
+      if (!e || e.type !== "spawn") throw new Error("no spawn");
+      return e;
+    };
+    expect(spawnOf(geared).maxHp).toBe(spawnOf(plain).maxHp + 200);
+    expect(spawnOf(geared).maxMana).toBe(spawnOf(plain).maxMana - 20);
+  });
+
   it("source never calls non-deterministic APIs", () => {
     const dir = join(import.meta.dirname, "../src");
     const banned = /Math\.(random|sin|cos|tan|atan2?|exp|log|pow)\b|Date\.now|performance\.now|localeCompare|new Date\(/;

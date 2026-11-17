@@ -63,3 +63,46 @@ describe("content", () => {
     }
   });
 });
+
+describe("items", () => {
+  const byId = new Map(baseSet.items.map((i) => [i.id, i]));
+
+  it("item ids are unique", () => {
+    expect(byId.size).toBe(baseSet.items.length);
+  });
+
+  it("every finished item has a recipe of two real components, and components have none", () => {
+    for (const item of baseSet.items) {
+      if (item.kind === "component") {
+        expect("recipe" in item, item.id).toBe(false);
+        continue;
+      }
+      expect(item.recipe, item.id).toHaveLength(2);
+      for (const part of item.recipe!) expect(byId.get(part)?.kind, `${item.id} -> ${part}`).toBe("component");
+    }
+  });
+
+  it("no two finished items share a recipe", () => {
+    const keys = baseSet.items.filter((i) => i.recipe).map((i) => [...i.recipe!].sort().join("+"));
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("every component is used in at least one recipe", () => {
+    const used = new Set(baseSet.items.flatMap((i) => i.recipe ?? []));
+    for (const c of baseSet.items.filter((i) => i.kind === "component")) expect(used.has(c.id), c.id).toBe(true);
+  });
+});
+
+describe("monsters", () => {
+  it("monsters match the unit schema and drop at least one component", () => {
+    for (const m of baseSet.monsters) {
+      expect(() => unit.parse({ ...m, traits: ["none"] }), m.id).not.toThrow();
+      expect(m.drops, m.id).toBeGreaterThan(0);
+    }
+  });
+
+  it("monster ids never collide with character ids", () => {
+    const unitIds = new Set(baseSet.units.map((u) => u.id));
+    for (const m of baseSet.monsters) expect(unitIds.has(m.id), m.id).toBe(false);
+  });
+});

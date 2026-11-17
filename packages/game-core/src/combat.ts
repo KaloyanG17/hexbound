@@ -1,5 +1,5 @@
 import type { ContentSet, Effect, UnitDef } from "@hexbound/content";
-import { activeTraits, compareIds, getUnit, scaleByStar } from "./content";
+import { activeTraits, compareIds, getUnit, itemTotals, scaleByStar } from "./content";
 import { type Cell, cellFromIndex, cellIndex, hexDistance, neighbors } from "./hex";
 import { createRng, nextInt } from "./rng";
 import type { BoardUnit, OwnedUnit, Side, Star } from "./types";
@@ -38,6 +38,10 @@ interface Fighter {
   attack: number;
   armor: number;
   mana: number;
+  /** Mana needed to cast, after items. */
+  maxMana: number;
+  /** Ticks between attacks, after items. */
+  attackTicks: number;
   attackCd: number;
   moveCd: number;
   stunned: number;
@@ -79,6 +83,14 @@ export function simulateCombat(
       for (const trait of traitsActive) {
         if (trait.bonus && def.traits.includes(trait.traitId)) stats[trait.bonus.stat] += trait.bonus.amount;
       }
+      // Items add flat stats on top of star scaling and traits. Floors keep a stack of speed or mana items sane.
+      const fromItems = itemTotals(content, unit.items ?? []);
+      stats.hp += fromItems.hp;
+      stats.attack += fromItems.attack;
+      stats.armor += fromItems.armor;
+      const attackTicks = Math.max(8, def.stats.attackTicks + fromItems.attackTicks);
+      const maxMana = Math.max(20, def.stats.maxMana + fromItems.maxMana);
+      const startMana = Math.min(maxMana, Math.max(0, def.stats.startMana + fromItems.startMana));
       const cell = toGlobalCell(unit.cell, side, content);
       const idx = cellIndex(cell, cols);
       if (occupied.has(idx)) throw new Error(`Two units on cell ${cell.col},${cell.row}`);
@@ -86,12 +98,12 @@ export function simulateCombat(
       fighters.push({
         uid, side, def, star: unit.star, cell,
         hp: stats.hp, maxHp: stats.hp, attack: stats.attack, armor: stats.armor,
-        mana: def.stats.startMana,
-        attackCd: nextInt(rng, Math.floor(def.stats.attackTicks / 2) + 1),
+        mana: startMana, maxMana, attackTicks,
+        attackCd: nextInt(rng, Math.floor(attackTicks / 2) + 1),
         moveCd: 0, stunned: 0, target: null, alive: true,
       });
       occupied.set(idx, uid);
-      events.push({ t: 0, type: "spawn", uid, side, unitId: def.id, star: unit.star, cell, hp: stats.hp, maxHp: stats.hp, maxMana: def.stats.maxMana });
+      events.push({ t: 0, type: "spawn", uid, side, unitId: def.id, star: unit.star, cell, hp: stats.hp, maxHp: stats.hp, maxMana });
     }
   }
 
@@ -149,7 +161,7 @@ export function simulateCombat(
       events.push({ t, type: "death", uid: target.uid });
       return;
     }
-    target.mana = Math.min(target.def.stats.maxMana, target.mana + rules.combat.manaPerHitTaken);
+    target.mana = Math.min(target.maxMana, target.mana + rules.combat.manaPerHitTaken);
   }
 
   function heal(t: number, target: Fighter, raw: number) {
@@ -201,14 +213,14 @@ export function simulateCombat(
           f.attackCd--;
           continue;
         }
-        f.attackCd = f.def.stats.attackTicks;
-        if (f.mana >= f.def.stats.maxMana) {
+        f.attackCd = f.attackTicks;
+        if (f.mana >= f.maxMana) {
           f.mana = 0;
           cast(t, f, target);
         } else {
           events.push({ t, type: "attack", uid: f.uid, target: target.uid });
           damage(t, f, target, f.attack);
-          f.mana = Math.min(f.def.stats.maxMana, f.mana + rules.combat.manaPerAttack);
+          f.mana = Math.min(f.maxMana, f.mana + rules.combat.manaPerAttack);
         }
         events.push({ t, type: "mana", uid: f.uid, mana: f.mana });
       } else if (f.moveCd > 0) {
