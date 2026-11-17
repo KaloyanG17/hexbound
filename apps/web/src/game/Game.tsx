@@ -1,7 +1,7 @@
 "use client";
 
 import type { UnitDef } from "@hexbound/content";
-import { activeTraits, type Cell, type Command, type FightRecord, getUnit, isAlive, type MatchState, sameCell, type Side } from "@hexbound/game-core";
+import { activeTraits, type Cell, type Command, type FightRecord, getItem, getUnit, isAlive, type MatchState, sameCell, type Side } from "@hexbound/game-core";
 import { useEffect, useState } from "react";
 import { Replay } from "./Replay";
 import { LazyArena } from "./three/LazyArena";
@@ -49,13 +49,18 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
   const [replay, setReplay] = useState<FightRecord | null>(null);
   const [busy, setBusy] = useState(false);
   const [inspect, setInspect] = useState<InspectTarget | null>(null);
+  // An inventory item picked up to give to a unit or to combine with another item.
+  const [selectedItem, setSelectedItem] = useState<number | null>(null);
 
   useEffect(() => transport.subscribe(setState), [transport]);
 
   // Escape clears the selection, the same as clicking empty space in most strategy games.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelection(null);
+      if (e.key === "Escape") {
+        setSelection(null);
+        setSelectedItem(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -73,6 +78,25 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
     const r = await transport.send(cmd);
     setError(r.ok ? null : r.error);
     setSelection(null);
+    setSelectedItem(null);
+  };
+
+  // Clicking a unit while an item is picked up gives the item to that unit.
+  const onUnitSelect = (src: DragSource) => {
+    if (selectedItem !== null) return send({ type: "equip", itemIndex: selectedItem, from: src.from, index: src.index });
+    setSelection((prev) => (prev && sameSource(prev, src) ? null : src));
+  };
+
+  // First click picks an item up; a second item combines with it; the same item again puts it down.
+  const onItemClick = (index: number) => {
+    if (selectedItem === null) {
+      setSelectedItem(index);
+      setSelection(null);
+    } else if (selectedItem === index) {
+      setSelectedItem(null);
+    } else {
+      void send({ type: "combine", first: selectedItem, second: index });
+    }
   };
 
   const act = (src: DragSource, target: DropTarget) => {
@@ -145,6 +169,10 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
   const xpNeeded = rules.xpToNext[me.level - 1];
   const xpPct = xpNeeded ? Math.round((100 * me.xp) / xpNeeded) : 100;
   const canLevel = me.level < rules.maxLevel;
+  const monsterRound = rules.creepRounds.some((w) => w.round === state.round);
+  const hint = selectedItem !== null
+    ? "Click a unit to give it the item · click another item to combine · Esc to cancel"
+    : selection ? "Click a hex to place it · Esc to cancel" : "Drag units · click to select · right-click for details";
 
   return (
     <div className={styles.table}>
@@ -152,6 +180,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
         <div className={styles.roundChip}>
           <span className={styles.roundLabel}>Round</span>
           <strong>{state.round}</strong>
+          {monsterRound ? <span className={styles.creepBadge} title="Win this round to earn item components">Monsters</span> : null}
         </div>
         <div className={styles.topStats}>
           <Chip label="Health" value={`${me.hp}`} tone="hp" />
@@ -159,9 +188,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
           <Chip label="Level" value={`${me.level}`} tone="mana" />
           {me.streak !== 0 ? <Chip label={me.streak > 0 ? "Win streak" : "Loss streak"} value={`${Math.abs(me.streak)}`} tone={me.streak > 0 ? "hp" : "danger"} /> : null}
         </div>
-        <div className={styles.topHint}>
-          {selection ? "Click a hex to place it · Esc to cancel" : "Drag units · click to select · right-click for details"}
-        </div>
+        <div className={styles.topHint}>{hint}</div>
       </header>
 
       <aside className={styles.leftRail}>
@@ -200,6 +227,25 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
           </button>
           <div className={styles.muted}>Board {me.board.length}/{me.level} characters</div>
         </section>
+
+        <section className={styles.card}>
+          <h3 className={styles.cardTitle}>Items {me.items.length}/{rules.maxInventory}</h3>
+          {me.items.length === 0 ? (
+            <p className={styles.muted}>Win a monster round (rounds {rules.creepRounds.map((w) => w.round).join(", ")}) to earn components.</p>
+          ) : null}
+          <div className={styles.itemGrid}>
+            {me.items.map((id, i) => {
+              const item = getItem(content, id);
+              const classes = [styles.itemChip, item.kind === "item" ? styles.itemDone : "", selectedItem === i ? styles.itemSelected : ""];
+              return (
+                <button key={`${id}-${i}`} type="button" className={classes.join(" ")} title={`${item.name}: ${item.description}`} onClick={() => onItemClick(i)}>
+                  <span className={styles.itemIcon}>{item.name.slice(0, 1)}</span>
+                  <span className={styles.itemName}>{item.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       </aside>
 
       <section className={styles.arenaPane}>
@@ -214,7 +260,7 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
           interactive
           dropHint={selection !== null}
           onCellClick={onCellClick}
-          onSelect={(src) => setSelection((prev) => (prev && sameSource(prev, src) ? null : src))}
+          onSelect={onUnitSelect}
           onDrop={act}
           onInspect={(unitId, star) => setInspect({ unitId, star })}
         />
@@ -225,6 +271,9 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
             <div className={styles.selectText}>
               <strong>{selectedDef.name}</strong>
               <span className={styles.muted}>{"★".repeat(selectedUnit.star)} · {selectedDef.role} · sells for {selectedDef.cost * (selectedUnit.star === 1 ? 1 : selectedUnit.star === 2 ? 3 : 9)}g</span>
+              {selectedUnit.items?.length ? (
+                <span className={styles.muted}>Carrying {selectedUnit.items.map((id) => getItem(content, id).name).join(", ")}</span>
+              ) : null}
             </div>
             <div className={styles.selectActions}>
               {selection?.from === "board" ? (

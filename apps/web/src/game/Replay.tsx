@@ -182,6 +182,13 @@ export function Replay({ fight, mySide, names, content, onDone }: ReplayProps) {
           <>
             <strong>{headline}</strong>
             {myDamage > 0 ? <span>You lose {myDamage} HP</span> : null}
+            {fight.creep ? (
+              <span className={styles.lootLine}>
+                {fight.loot.length > 0
+                  ? `Loot: ${fight.loot.map((id) => content.items.find((i) => i.id === id)?.name ?? id).join(", ")}`
+                  : "No loot this time"}
+              </span>
+            ) : null}
             <button type="button" className={styles.primary} onClick={onDone}>Continue</button>
           </>
         ) : (

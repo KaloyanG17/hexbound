@@ -835,6 +835,83 @@ button:disabled {
   display: block;
 }
 
+/* Item inventory: components are plain, finished items glow gold, the picked-up item is outlined. */
+.itemGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.itemChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-deep);
+  color: var(--text);
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.itemChip:hover {
+  border-color: var(--gold);
+}
+
+.itemDone {
+  border-color: rgb(217 179 92 / 0.6);
+  box-shadow: inset 0 0 10px rgb(217 179 92 / 0.15);
+}
+
+.itemSelected {
+  outline: 2px solid var(--gold-hi);
+  outline-offset: 1px;
+}
+
+.itemIcon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(#2a3d60, #16233a);
+  color: var(--gold-hi);
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+
+.itemDone .itemIcon {
+  background: linear-gradient(#f7de8e, #b98a2e);
+  color: #1b1405;
+}
+
+.itemName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.creepBadge {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(209 59 59 / 0.25);
+  border: 1px solid rgb(255 107 107 / 0.6);
+  color: #ffb4b4;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.lootLine {
+  color: var(--gold-hi);
+  font-weight: 600;
+}
+
 /* Unit health and mana bars drawn above each figure in the arena. Non-interactive, so clicks reach the unit. */
 .unitBars {
   display: flex;
