@@ -70,8 +70,8 @@ export interface Rules {
   /** Loser takes min(base + floor(round / perRounds), max) + surviving enemy units. */
   damage: { base: number; perRounds: number; max: number };
   combat: { tickRate: number; maxTicks: number; moveTicks: number; manaPerAttack: number; manaPerHitTaken: number };
-  /** Rounds that are monster rounds: no opponent, the player fights creeps and wins loot. */
-  creepRounds: readonly number[];
+  /** Monster rounds: no opponent, every player fights this wave of monsters and wins loot. */
+  creepRounds: readonly { round: number; monsters: readonly string[] }[];
   /** Items a character can carry. */
   maxItemsPerUnit: number;
   /** Items held in the player's inventory. */

@@ -27,7 +27,12 @@ export const rules = {
   start: { hp: 100, gold: 6, level: 3 },
   damage: { base: 2, perRounds: 3, max: 15 },
   combat: { tickRate: 30, maxTicks: 30 * 45, moveTicks: 9, manaPerAttack: 10, manaPerHitTaken: 4 },
-  creepRounds: [3, 6, 9, 12],
+  creepRounds: [
+    { round: 3, monsters: ["moss-crawler", "ember-imp"] },
+    { round: 6, monsters: ["tide-lurker", "gale-harpy", "ember-imp"] },
+    { round: 9, monsters: ["stone-golem", "gale-harpy", "tide-lurker"] },
+    { round: 12, monsters: ["elder-wyrm", "stone-golem"] },
+  ],
   maxItemsPerUnit: 3,
   maxInventory: 10,
 } as const satisfies Rules;

@@ -101,7 +101,8 @@ function Match({ transport, onQuit }: { transport: GameTransport; onQuit: () => 
 
   if (replay) {
     const mySide: Side = replay.a === playerId ? 0 : 1;
-    const names: [string, string] = [state.players[replay.a]!.name, state.players[replay.b]!.name];
+    // On a monster round the opponent is the wave itself, not a player.
+    const names: [string, string] = [state.players[replay.a]!.name, replay.creep ? "Monsters" : state.players[replay.b]!.name];
     return <Replay fight={replay} mySide={mySide} names={names} content={content} onDone={() => setReplay(null)} />;
   }
 

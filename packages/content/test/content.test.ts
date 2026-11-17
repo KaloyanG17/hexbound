@@ -101,6 +101,16 @@ describe("monsters", () => {
     }
   });
 
+  it("every creep wave uses real monsters on distinct rounds", () => {
+    const monsterIds = new Set(baseSet.monsters.map((m) => m.id));
+    const rounds = baseSet.rules.creepRounds.map((w) => w.round);
+    expect(new Set(rounds).size).toBe(rounds.length);
+    for (const wave of baseSet.rules.creepRounds) {
+      expect(wave.monsters.length, `round ${wave.round}`).toBeGreaterThan(0);
+      for (const id of wave.monsters) expect(monsterIds.has(id), `round ${wave.round} -> ${id}`).toBe(true);
+    }
+  });
+
   it("monster ids never collide with character ids", () => {
     const unitIds = new Set(baseSet.units.map((u) => u.id));
     for (const m of baseSet.monsters) expect(unitIds.has(m.id), m.id).toBe(false);

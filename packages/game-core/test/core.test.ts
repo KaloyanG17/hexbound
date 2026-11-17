@@ -163,11 +163,80 @@ describe("match", () => {
       expect(totalCopies(state)).toBe(total);
       const { state: next, fights } = resolveRound(state, content);
       const aliveBefore = state.players.filter(isAlive).length;
-      expect(fights).toHaveLength(Math.ceil(aliveBefore / 2));
+      // Monster rounds give every player their own fight; other rounds pair players up.
+      const creep = content.rules.creepRounds.some((w) => w.round === state.round);
+      expect(fights).toHaveLength(creep ? aliveBefore : Math.ceil(aliveBefore / 2));
+      if (creep) for (const f of fights) expect(f.creep && f.b === -1 && f.damageToA === 0).toBe(true);
       state = next;
       expect(state.round).toBeLessThan(200);
     }
     expect(state.players.filter(isAlive).length).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("items", () => {
+  // A one-player view of a fresh match, with a unit on the bench and a known inventory.
+  const withInventory = (items: string[], benchUnit = { unitId: "coralyn", star: 1 as const }): MatchState => {
+    const m = createMatch({ seed: 3, playerNames: ["a", "b"] }, content);
+    m.players[0]!.items = items;
+    m.players[0]!.bench[0] = benchUnit;
+    return m;
+  };
+
+  it("combines two components in the inventory into their item", () => {
+    const r = applyCommand(withInventory(["wyrm-fang", "tide-pearl", "ember-shard"]), 0, { type: "combine", first: 0, second: 2 }, content);
+    expect(r.ok && r.state.players[0]!.items).toEqual(["tide-pearl", "blade-of-embers"]);
+  });
+
+  it("refuses to combine items without a recipe", () => {
+    expect(applyCommand(withInventory(["tide-pearl", "ember-shard"]), 0, { type: "combine", first: 0, second: 1 }, content).ok).toBe(false);
+  });
+
+  it("equipping a component onto its recipe partner completes the item on the unit", () => {
+    let m = withInventory(["iron-scale", "tide-pearl"]);
+    let r = applyCommand(m, 0, { type: "equip", itemIndex: 0, from: "bench", index: 0 }, content);
+    expect(r.ok).toBe(true);
+    m = (r as { state: MatchState }).state;
+    r = applyCommand(m, 0, { type: "equip", itemIndex: 0, from: "bench", index: 0 }, content);
+    expect(r.ok && r.state.players[0]!.bench[0]!.items).toEqual(["tidal-bulwark"]);
+    expect(r.ok && r.state.players[0]!.items).toEqual([]);
+  });
+
+  it("a unit carries at most three items", () => {
+    const m = withInventory(["blade-of-embers"], { unitId: "coralyn", star: 1, items: ["lifespring", "thorn-plate", "gale-bow"] } as never);
+    expect(applyCommand(m, 0, { type: "equip", itemIndex: 0, from: "bench", index: 0 }, content).ok).toBe(false);
+  });
+
+  it("selling a unit returns its items to the inventory", () => {
+    const m = withInventory([], { unitId: "coralyn", star: 1, items: ["lifespring"] } as never);
+    const r = applyCommand(m, 0, { type: "sell", from: "bench", index: 0 }, content);
+    expect(r.ok && r.state.players[0]!.items).toEqual(["lifespring"]);
+  });
+
+  it("items move with a unit between bench and board", () => {
+    const m = withInventory([], { unitId: "coralyn", star: 1, items: ["lifespring"] } as never);
+    const placed = applyCommand(m, 0, { type: "place", benchIndex: 0, cell: { col: 3, row: 3 } }, content);
+    expect(placed.ok && placed.state.players[0]!.board[0]!.items).toEqual(["lifespring"]);
+    const benched = applyCommand((placed as { state: MatchState }).state, 0, { type: "bench", boardIndex: 0 }, content);
+    expect(benched.ok && benched.state.players[0]!.bench.find(Boolean)!.items).toEqual(["lifespring"]);
+  });
+
+  it("winning a monster round drops components, losing drops nothing", () => {
+    const m = createMatch({ seed: 9, playerNames: ["strong", "empty"] }, content);
+    m.round = content.rules.creepRounds[0]!.round;
+    m.players[0]!.board = [
+      { unitId: "magmaw", star: 3, cell: { col: 3, row: 3 } },
+      { unitId: "drowned-oracle", star: 3, cell: { col: 3, row: 0 } },
+    ];
+    const { state, fights } = resolveRound(m, content);
+    const strong = fights.find((f) => f.a === 0)!;
+    const empty = fights.find((f) => f.a === 1)!;
+    expect(strong.result.winner).toBe(0);
+    expect(strong.loot.length).toBeGreaterThan(0);
+    expect(state.players[0]!.items).toEqual(strong.loot);
+    for (const id of strong.loot) expect(content.items.find((i) => i.id === id)?.kind).toBe("component");
+    expect(empty.loot).toEqual([]);
+    expect(state.players[1]!.hp).toBe(content.rules.start.hp);
   });
 });
 

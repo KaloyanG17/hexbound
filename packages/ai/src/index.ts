@@ -46,6 +46,16 @@ export function simpleBotTurn(start: MatchState, playerId: number, content: Cont
     if (cell) run({ type: "place", benchIndex: i, cell });
   }
 
+  // Hand loot to board units, the one carrying the fewest items first. Equipping a component next
+  // to its recipe partner completes the item, so the bot gets finished items without planning them.
+  for (let guard = 0; guard < 12 && me().items.length > 0 && me().board.length > 0; guard++) {
+    const target = me().board
+      .map((u, index) => ({ index, carried: (u.items ?? []).length }))
+      .filter((x) => x.carried < content.rules.maxItemsPerUnit)
+      .sort((a, b) => a.carried - b.carried || a.index - b.index)[0];
+    if (!target || !run({ type: "equip", itemIndex: 0, from: "board", index: target.index })) break;
+  }
+
   // Sell the bench overflow when nearly full so buying never stalls.
   while (me().bench.filter(Boolean).length > content.rules.benchSize - 2) {
     const worst = benchOrder().at(-1);
